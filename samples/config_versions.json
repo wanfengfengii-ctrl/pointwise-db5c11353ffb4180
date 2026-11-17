@@ -1,0 +1,27 @@
+{
+  "case_id": "late_config_binding",
+  "spec": {"source_id":"cape-source","subscription_id":"vibration","initial_sequence":9,"items":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","quantity":"velocity"}]},
+  "events": [
+    {"kind":"data","sequence":11,"config_id":"B","items":[{"item_id":"a","value":"1.00","quality":"Good","timestamp":null}]},
+    {"kind":"data","sequence":10,"items":[{"item_id":"a","value":"2.500","quality":"Good","timestamp":null}]}
+  ],
+  "republish": {"10":["temporary"]},
+  "actions": [
+    {"op":"pump","limit":1,"label":"candidate"},
+    {"op":"pump","limit":1,"label":"initial"},
+    {"op":"snapshot","name":"before_B","label":"frozen"},
+    {"op":"reopen","label":"waiting_reopened"},
+    {"op":"register","config_id":"B","items":[{"item_id":"a","device":"centrifuge-4","channel":"acceleration","unit":"m/s2","quantity":"acceleration"}],"label":"bound","check_saved":"before_B"},
+    {"op":"flush","label":"confirmed"},
+    {"op":"reopen","label":"complete_reopened"}
+  ],
+  "expected": {
+    "candidate": {"label":"candidate","ack_sequences":[],"report":{"records":[],"coverage":{"state":"waiting","frontier":0,"known_positions":2,"pending":[10],"waiting_config":[11],"invalid":[],"blocked_data":[],"data_notifications":0,"covered_positions":0,"visible_gaps":[]}}},
+    "initial": {"label":"initial","ack_sequences":[10],"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]}],"coverage":{"state":"waiting","frontier":1,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[11],"invalid":[],"covered_positions":1,"data_notifications":1,"visible_gaps":[]}}},
+    "frozen": {"label":"frozen","ack_sequences":[10],"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]}],"coverage":{"state":"waiting","frontier":1,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[11],"invalid":[],"covered_positions":1,"data_notifications":1,"visible_gaps":[]}}},
+    "waiting_reopened": {"label":"waiting_reopened","ack_sequences":[10],"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]}],"coverage":{"state":"waiting","frontier":1,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[11],"invalid":[],"covered_positions":1,"data_notifications":1,"visible_gaps":[]}}},
+    "bound": {"label":"bound","ack_sequences":[10],"conversion":{"promoted":[11],"invalid":[]},"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]},{"kind":"data","position":2,"sequence":11,"observations":[{"item_id":"a","device":"centrifuge-4","channel":"acceleration","unit":"m/s2","value":"1.00","quality":"Good","timestamp":null}]}],"coverage":{"state":"results","frontier":2,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[],"invalid":[],"covered_positions":2,"data_notifications":2,"visible_gaps":[]}},"saved_report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]}],"coverage":{"state":"waiting","frontier":1,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[11],"invalid":[],"covered_positions":1,"data_notifications":1,"visible_gaps":[]}}},
+    "confirmed": {"label":"confirmed","ack_sequences":[10,11],"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]},{"kind":"data","position":2,"sequence":11,"observations":[{"item_id":"a","device":"centrifuge-4","channel":"acceleration","unit":"m/s2","value":"1.00","quality":"Good","timestamp":null}]}],"coverage":{"state":"results","frontier":2,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[],"invalid":[],"covered_positions":2,"data_notifications":2,"visible_gaps":[]}}},
+    "complete_reopened": {"label":"complete_reopened","ack_sequences":[10,11],"report":{"records":[{"kind":"data","position":1,"sequence":10,"observations":[{"item_id":"a","device":"pump-1","channel":"velocity","unit":"mm/s","value":"2.500","quality":"Good","timestamp":null}]},{"kind":"data","position":2,"sequence":11,"observations":[{"item_id":"a","device":"centrifuge-4","channel":"acceleration","unit":"m/s2","value":"1.00","quality":"Good","timestamp":null}]}],"coverage":{"state":"results","frontier":2,"known_positions":2,"pending":[],"blocked_data":[],"waiting_config":[],"invalid":[],"covered_positions":2,"data_notifications":2,"visible_gaps":[]}}}
+  }
+}

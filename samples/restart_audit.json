@@ -1,0 +1,106 @@
+{
+  "case_id": "v7",
+  "spec": {
+    "source_id": "cape-source",
+    "subscription_id": "vibration",
+    "initial_sequence": 9,
+    "items": [
+      {
+        "item_id": "a",
+        "device": "pump-1",
+        "channel": "velocity",
+        "unit": "mm/s",
+        "quantity": "velocity"
+      },
+      {
+        "item_id": "b",
+        "device": "bench-2",
+        "channel": "acceleration",
+        "unit": "m/s2",
+        "quantity": "acceleration"
+      },
+      {
+        "item_id": "c",
+        "device": "idle-3",
+        "channel": "velocity",
+        "unit": "mm/s",
+        "quantity": "velocity"
+      }
+    ]
+  },
+  "events": [
+    {
+      "kind": "data",
+      "sequence": 11,
+      "items": [
+        {
+          "item_id": "b",
+          "value": null,
+          "quality": "Bad",
+          "timestamp": null
+        },
+        {
+          "item_id": "a",
+          "value": "1.2345678901234567890123456789",
+          "quality": "Good",
+          "timestamp": "2026-11-17T08:00:00.123456+08:00"
+        }
+      ]
+    },
+    {
+      "kind": "disconnect"
+    }
+  ],
+  "republish": {
+    "10": [
+      "temporary",
+      {
+        "status": "data",
+        "notification": {
+          "kind": "data",
+          "sequence": 10,
+          "items": [
+            {
+              "item_id": "b",
+              "value": null,
+              "quality": "Bad",
+              "timestamp": null
+            },
+            {
+              "item_id": "a",
+              "value": "1.2345678901234567890123456789",
+              "quality": "Good",
+              "timestamp": "2026-11-17T08:00:00.123456+08:00"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "acknowledgments": {
+    "11": [
+      "lost"
+    ]
+  },
+  "actions": [
+    {
+      "op": "pump",
+      "limit": 1,
+      "expect_disconnect": true
+    },
+    {
+      "op": "configure"
+    },
+    {
+      "op": "reopen"
+    },
+    {
+      "op": "pump",
+      "limit": 1,
+      "expect_disconnect": true
+    },
+    {
+      "op": "reopen"
+    }
+  ]
+}

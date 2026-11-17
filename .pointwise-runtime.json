@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "kind": "cli",
+  "setup": [],
+  "verify": ["python3.11", "-B", "-m", "unittest", "discover", "-s", "tests"],
+  "demo": ["python3.11", "-B", "-m", "capture.service", "samples/day_capture.json", "samples/gap_repair.json", "samples/restart_audit.json", "--expected", "samples/expected_results.json"]
+}

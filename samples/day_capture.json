@@ -1,0 +1,79 @@
+{
+  "case_id": "v1",
+  "spec": {
+    "source_id": "cape-source",
+    "subscription_id": "vibration",
+    "initial_sequence": 9,
+    "items": [
+      {
+        "item_id": "a",
+        "device": "pump-1",
+        "channel": "velocity",
+        "unit": "mm/s",
+        "quantity": "velocity"
+      },
+      {
+        "item_id": "b",
+        "device": "bench-2",
+        "channel": "acceleration",
+        "unit": "m/s2",
+        "quantity": "acceleration"
+      },
+      {
+        "item_id": "c",
+        "device": "idle-3",
+        "channel": "velocity",
+        "unit": "mm/s",
+        "quantity": "velocity"
+      }
+    ]
+  },
+  "events": [
+    {
+      "kind": "data",
+      "sequence": 10,
+      "items": [
+        {
+          "item_id": "b",
+          "value": null,
+          "quality": "Bad",
+          "timestamp": null
+        },
+        {
+          "item_id": "a",
+          "value": "1.2345678901234567890123456789",
+          "quality": "Good",
+          "timestamp": "2026-11-17T08:00:00.123456+08:00"
+        }
+      ]
+    },
+    {
+      "kind": "keepalive",
+      "sequence": 11
+    },
+    {
+      "kind": "data",
+      "sequence": 11,
+      "items": [
+        {
+          "item_id": "b",
+          "value": null,
+          "quality": "Bad",
+          "timestamp": null
+        },
+        {
+          "item_id": "a",
+          "value": "2.500",
+          "quality": "Good",
+          "timestamp": "2026-11-17T08:00:00.123456+08:00"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "op": "pump",
+      "limit": 3
+    }
+  ]
+}

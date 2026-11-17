@@ -1,0 +1,39 @@
+{
+  "v1": {
+    "records": [
+      ["data", 10],
+      ["data", 11]
+    ],
+    "coverage": {
+      "data_notifications": 2,
+      "visible_gaps": [],
+      "pending": [],
+      "state": "results"
+    }
+  },
+  "v4": {
+    "records": [
+      ["data", 4294967294],
+      ["gap", 4294967295],
+      ["data", 1]
+    ],
+    "coverage": {
+      "data_notifications": 2,
+      "visible_gaps": [4294967295],
+      "pending": [],
+      "state": "results"
+    }
+  },
+  "v7": {
+    "records": [
+      ["data", 10],
+      ["data", 11]
+    ],
+    "coverage": {
+      "data_notifications": 2,
+      "visible_gaps": [],
+      "pending": [],
+      "state": "results"
+    }
+  }
+}
