@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from capture.notifications import decode_publish, KeepAlive
+from capture.notifications import decode_versioned_publish, KeepAlive
 from capture.availability import decode_availability
-from capture.archive import accept_notification
+from capture.archive import accept_source
 from capture.republish import repair_pending
 from capture.acknowledgments import flush_acknowledgments
 from capture.completeness import audit
@@ -24,12 +24,12 @@ def pump(handle, port, event_limit):
         event = port.publish()
         if event is None:
             break
-        decoded = decode_publish(event, handle.registry)
+        decoded = decode_versioned_publish(event)
         hint = decode_availability(event)
         if isinstance(decoded, KeepAlive):
             last_keepalive = decoded.next_sequence
         else:
-            accept_notification(handle, decoded)
+            accept_source(handle, decoded)
         processed += 1
         repair_pending(handle, port, hint)
         flush_acknowledgments(handle, port)

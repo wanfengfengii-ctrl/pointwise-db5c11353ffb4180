@@ -23,7 +23,9 @@ def register_missing(con, subscription_id, state, through):
                            (subscription_id, position)).fetchone()
         gap = con.execute('SELECT 1 FROM gaps WHERE sub=? AND pos=?',
                           (subscription_id, position)).fetchone()
-        if not data and not gap:
+        candidate = con.execute('SELECT 1 FROM candidates WHERE sub=? AND pos=?',
+                                (subscription_id, position)).fetchone()
+        if not data and not gap and not candidate:
             con.execute('INSERT OR IGNORE INTO pending(sub,pos,seq) VALUES(?,?,?)',
                         (subscription_id, position, window.sequence_at(position)))
 

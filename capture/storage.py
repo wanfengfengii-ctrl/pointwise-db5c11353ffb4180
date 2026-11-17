@@ -7,9 +7,18 @@ CREATE TABLE IF NOT EXISTS subscriptions(
  id TEXT PRIMARY KEY, source TEXT NOT NULL, config TEXT NOT NULL,
  initial INTEGER NOT NULL, frontier INTEGER NOT NULL DEFAULT 0,
  high INTEGER NOT NULL DEFAULT 0, CHECK(frontier >= 0 AND high >= frontier));
+CREATE TABLE IF NOT EXISTS config_versions(
+ sub TEXT NOT NULL REFERENCES subscriptions(id), config_id TEXT NOT NULL CHECK(length(config_id) > 0),
+ items TEXT NOT NULL, PRIMARY KEY(sub,config_id));
 CREATE TABLE IF NOT EXISTS notifications(
  sub TEXT NOT NULL REFERENCES subscriptions(id), pos INTEGER NOT NULL CHECK(pos > 0),
  seq INTEGER NOT NULL CHECK(seq BETWEEN 1 AND 4294967295), payload TEXT NOT NULL,
+ config_id TEXT NOT NULL DEFAULT 'initial' CHECK(length(config_id) > 0),
+ PRIMARY KEY(sub,pos));
+CREATE TABLE IF NOT EXISTS candidates(
+ sub TEXT NOT NULL REFERENCES subscriptions(id), pos INTEGER NOT NULL CHECK(pos > 0),
+ seq INTEGER NOT NULL, config_id TEXT NOT NULL CHECK(length(config_id) > 0),
+ state TEXT NOT NULL CHECK(state IN ('waiting','invalid')), payload TEXT NOT NULL,
  PRIMARY KEY(sub,pos));
 CREATE TABLE IF NOT EXISTS pending(
  sub TEXT NOT NULL REFERENCES subscriptions(id), pos INTEGER NOT NULL CHECK(pos > 0),
@@ -38,6 +47,15 @@ class CaptureDatabase:
 
     def initialize(self):
         self.connection.executescript(SCHEMA)
+        self._migrate()
+
+    def _migrate(self):
+        columns = {row['name'] for row in
+                   self.connection.execute('PRAGMA table_info(notifications)')}
+        if 'config_id' not in columns:
+            # Databases written before configuration versions keep initial bindings.
+            self.connection.execute(
+                "ALTER TABLE notifications ADD COLUMN config_id TEXT NOT NULL DEFAULT 'initial'")
 
     @contextmanager
     def transaction(self):

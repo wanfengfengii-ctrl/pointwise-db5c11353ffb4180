@@ -68,8 +68,7 @@ def _contains(actual, expected, path='result'):
 
 
 def run_case(case, db_path):
-    # This entry becomes runnable when the requested V2 API is delivered.
-    from capture.configuration import register_config
+    from capture.config_versions import register_config
     from capture.storage import CaptureDatabase
     from capture.subscription import configure
     from capture.receiver import pump
@@ -82,21 +81,22 @@ def run_case(case, db_path):
     db = CaptureDatabase(db_path)
     checkpoints = []
     saved = {}
+    handle = configure(db, case['spec'])
     try:
-        handle = configure(db, case['spec'])
         for action in case['actions']:
+            operation = action['op']
             conversion = None
-            if action['op'] == 'pump':
+            if operation == 'pump':
                 pump(handle, port, action['limit'])
-            elif action['op'] == 'reopen':
+            elif operation == 'reopen':
                 db.close()
                 db = CaptureDatabase(db_path)
                 handle = resume(db, case['spec']['subscription_id'], port)
-            elif action['op'] == 'register':
+            elif operation == 'register':
                 conversion = register_config(handle, action['config_id'], action['items'])
-            elif action['op'] == 'flush':
+            elif operation == 'flush':
                 flush_acknowledgments(handle, port)
-            elif action['op'] == 'snapshot':
+            elif operation == 'snapshot':
                 saved[action['name']] = load_snapshot(handle)
             else:
                 raise ValueError('unknown version scenario action')

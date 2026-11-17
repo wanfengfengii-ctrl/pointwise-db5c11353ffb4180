@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import json
+from capture.config_versions import ensure_initial_version
 from capture.configuration import canonical_spec, require_compatible_spec, validate_spec
 from capture.items import ItemRegistry
 
@@ -35,6 +36,7 @@ def configure(db, subscription_spec):
         else:
             con.execute('INSERT INTO subscriptions(id,source,config,initial) VALUES(?,?,?,?)',
                         (spec.subscription_id, spec.source_id, encoded, spec.initial_sequence))
+        ensure_initial_version(con, spec.subscription_id, spec.items)
     return SubscriptionHandle(db, spec)
 
 

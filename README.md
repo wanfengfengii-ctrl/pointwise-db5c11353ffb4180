@@ -11,7 +11,7 @@ python3.11 -B -m unittest discover -s tests
 python3.11 -B -m capture.service samples/day_capture.json samples/gap_repair.json samples/restart_audit.json --expected samples/expected_results.json
 ```
 
-两份运行清单的 verify 和 demo 均为实际 argv。demo 每次为每个脚本创建自己的临时 SQLite 数据库，运行后清理；重开动作保留同一个来源对象。只有实际结果与静态独立账本一致后，才输出 POINTWISE_SCENARIO JSON。异常保留非零退出码。应用不在项目根目录创建数据库。
+两份运行清单的 verify 和 demo 均为实际 argv。demo 先按原三个账本输出 POINTWISE_SCENARIO，再跑来源夹具自检与 samples/config_versions.json 的迟到绑定账本，输出 CONFIG_BINDING_LEDGER。每次为每个脚本创建自己的临时 SQLite 数据库，运行后清理；重开动作保留同一个来源对象。只有实际结果与静态独立账本一致后，才输出对应 JSON。异常保留非零退出码。应用不在项目根目录创建数据库。
 
 ## 一天的工作
 
@@ -29,6 +29,7 @@ python3.11 -B -m capture.service samples/day_capture.json samples/gap_repair.jso
 ```python
 from capture.storage import CaptureDatabase
 from capture.subscription import configure
+from capture.configuration import register_config
 from capture.receiver import pump
 from capture.recovery import resume
 from capture.readings import read
@@ -40,6 +41,7 @@ from capture.export import export_snapshot
 # handle = configure(db, spec)
 # result = pump(handle, port, event_limit=10)
 # handle = resume(db, spec['subscription_id'], port)
+# conversion = register_config(handle, 'B', items)  # {'promoted': [...], 'invalid': [...]}
 # records = read(handle, device='pump-1')
 # report_bytes = export_snapshot(handle)
 # db.close()
@@ -53,7 +55,9 @@ resume(db, subscription_id, port) 验证来源及订阅身份，从持久事实�
 
 read 返回来源有序的不可变 ReadRecord 元组；数据记录含有序 Observation，缺口记录含原因。每条记录含从本次登记起算的 position 和原 sequence。device=None 保留全部通知，包括空载荷通知；指定设备只保留含该设备观测的数据记录，明确缺口仍按全局消息口径列出。已登记但没有观测的设备返回空观测集合，未知设备报错；全局缺口可能仍在结果中。
 
-audit 返回 CompletenessResult：state 为 empty、waiting 或 results；分别包含可见数据通知数、visible_gaps、pending、blocked_data、covered_positions、frontier、known_positions。covered_positions 是可见通知加可见缺口数；不推断采样频率和未见尾部。存在待补时状态为 waiting，可同时有已发布成果及缺口。
+audit 返回 CompletenessResult：state 为 empty、waiting 或 results；分别包含可见数据通知数、visible_gaps、pending、blocked_data、covered_positions、frontier、known_positions，以及配置迟到新增的 waiting_config、invalid 序号元组。covered_positions 是可见通知加可见缺口数；不推断采样频率和未见尾部。存在待补、waiting_config 或 invalid 时状态为 waiting，可同时有已发布成果及缺口。
+
+迟到配置：数据可带 config_id 绑定某个已登记版本，未携带时绑定 initial。未知版本的整条先做映射无关校验再持久为候选，不补采、不确认、不阻挡不了前沿之外的合法后继；register_config 同事务登记版本并逐条解释候选，合法者取得确认资格，未知监测项整条留为 invalid。读取与导出按每条通知的原绑定版本解释设备、通道和单位，设备筛选覆盖已登记版本；旧快照与导出字节不变。详见 CONFIG_VERSIONS.md。
 
 capture.projection.load_snapshot 取得不可变一致快照；select_readings、summarize_coverage、encode_report 可共同消费该快照。export_snapshot 返回 UTF-8 JSON 字节和末尾换行；可传入先前快照保存特定核对时刻。快照不包含运行时间或随机 ID，原快照在后续采集后保持不变。报告含订阅、来源、设备条件、有序记录和全局覆盖口径。
 
@@ -69,11 +73,11 @@ DeterministicPort 的构造参数是 source_id、subscription_id、events、repu
 
 ## 持久边界与模块
 
-配置由 subscription/configuration/items/catalog 拥有；接入由 receiver/notifications/values/port 负责。positions 提供共同来源身份；pending/availability/republish/gaps/recovery 管理补采和恢复；archive/identity/frontier/acknowledgments/storage 管理原子接纳、完整内容、可见性与确认；projection/readings/completeness/export/service 形成下游核对闭环。
+配置由 subscription/configuration/config_versions/items/catalog 拥有；接入由 receiver/notifications/values/port 负责。positions 提供共同来源身份；pending/availability/republish/gaps/recovery 管理补采和恢复；archive/identity/frontier/acknowledgments/storage 管理原子接纳、完整内容、可见性与确认；projection/readings/completeness/export/service 形成下游核对闭环。
 
-数据、前方待补、前沿、确认资格同事务提交；明确缺口、待补结清与前沿也同事务提交。已持久但不可见的数据可以确认，缺口与保活永不确认。来源调用期间没有本地事务；返回后复核身份及最新事实。CaptureDatabase.before_commit 为可选的本地提交边界回调，异常导致完整回滚，可用于验证持久性。每个句柄由一个调用方顺序驱动；支持其他 SQLite 连接在远端调用期间独立写入，不提供同一连接的跨线程并发调用。
+数据、前方待补、前沿、确认资格同事务提交；明确缺口、待补结清与前沿也同事务提交。配置版本登记与本次候选转换同事务。已持久但不可见的数据可以确认，缺口、保活与任何等待/非法候选永不确认。来源调用期间没有本地事务；返回后复核身份及最新事实。CaptureDatabase.before_commit 为可选的本地提交边界回调，异常导致完整回滚，可用于验证持久性。每个句柄由一个调用方顺序驱动；支持其他 SQLite 连接在远端调用期间独立写入，不提供同一连接的跨线程并发调用。
 
-audit 会检查已知位置覆盖、连续前沿、载荷配置、数据/缺口/待补互斥及数据确认资格；发现不一致抛 ValueError，不自动修复。存储、来源和解码错误不伪装成成功。完整套件包含文件重开、第二连接写事务和真实子进程提交前后终止测试，均只使用测试自建临时目录。
+audit 会检查已知位置覆盖、连续前沿、载荷配置、数据/缺口/待补/候选互斥、正确版本解释及数据确认资格；发现不一致抛 ValueError，不自动修复。存储、来源和解码错误不伪装成成功。完整套件包含文件重开、第二连接写事务和真实子进程提交前后终止测试，均只使用测试自建临时目录。
 
 ## 场景账本
 
@@ -82,3 +86,5 @@ gap_repair 从 4294967293 开始，依次收到 1、保活 2、4294967294；4294
 restart_audit 先持久保存 11，确认被来源接受但回复丢失；重开补齐 10，重试确认得到 already，后续断线再重开，最终仅有 10、11。
 
 原回归定义在 tests/test_capture.py、test_repair.py、test_recovery.py 和 test_consumption.py，保留 v1—v8 的八个命名主场景并增加逐边界断言。样例账本直接按来源位置手算，不调用被验证的排序、前沿或覆盖函数计算预期。
+
+迟到配置账本在 samples/config_versions.json 与 capture/version_fixture.py：初始位置 9，绑定 B 的 11 先到并等待，绑定 initial 的 10 随后可见；登记 B 后 10 仍归 pump-1/mm/s，11 归 centrifuge-4/m/s2，两者分别取得确认资格并确认。业务回归在 tests/test_late_config.py。

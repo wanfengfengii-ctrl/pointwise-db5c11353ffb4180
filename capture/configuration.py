@@ -1,5 +1,6 @@
 from dataclasses import asdict, dataclass
 import json
+from capture.config_versions import register_config
 from capture.items import ItemRegistry, MonitoredItem
 from capture.positions import validate_sequence
 

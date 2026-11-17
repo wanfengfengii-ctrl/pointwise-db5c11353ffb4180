@@ -3,7 +3,7 @@ from capture.pending import list_pending
 from capture.availability import prioritize_pending
 from capture.notifications import decode_republish
 from capture.gaps import validate_unavailable_reply
-from capture.archive import accept_notification, accept_gap
+from capture.archive import accept_source, accept_gap
 
 
 @dataclass(frozen=True)
@@ -20,19 +20,22 @@ def apply_republish_reply(handle, request, reply):
             reply.sequence != request.sequence):
         raise ValueError('Republish reply identity mismatch')
     if reply.status == 'data':
-        notification = decode_republish(reply, handle.registry)
-        accept_notification(handle, notification, expected=request)
+        notification = decode_republish(reply)
+        accept_source(handle, notification, expected=request)
         return 'data'
     if reply.status == 'unavailable':
         evidence = validate_unavailable_reply(handle, request, reply)
         # A second admission can occur while the remote call is in progress.
         current = {work.offset: work for work in list_pending(handle)}
         if request.offset not in current:
-            row = handle.db.connection.execute(
+            settled = handle.db.connection.execute(
                 'SELECT 1 FROM notifications WHERE sub=? AND pos=?',
                 (handle.subscription_id, request.offset)).fetchone()
-            if row:
-                raise ValueError('unavailable reply contradicts accepted data')
+            candidate = handle.db.connection.execute(
+                'SELECT 1 FROM candidates WHERE sub=? AND pos=?',
+                (handle.subscription_id, request.offset)).fetchone()
+            if settled or candidate:
+                raise ValueError('unavailable reply contradicts accepted source evidence')
         accept_gap(handle, evidence)
         return 'gaps'
     if reply.status == 'temporary' and reply.notification is None:

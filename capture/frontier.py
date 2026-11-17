@@ -22,6 +22,7 @@ def load_frontier(con, subscription_id):
 
 
 def advance_frontier(con, subscription_id):
+    """Advance only over admitted data or permanent gaps, never over candidates."""
     state = load_frontier(con, subscription_id)
     frontier = state.frontier
     while frontier < state.high:
@@ -30,8 +31,10 @@ def advance_frontier(con, subscription_id):
                            (subscription_id, position)).fetchone()
         gap = con.execute('SELECT 1 FROM gaps WHERE sub=? AND pos=?',
                           (subscription_id, position)).fetchone()
-        if data and gap:
-            raise ValueError('data/gap conflict')
+        candidate = con.execute('SELECT 1 FROM candidates WHERE sub=? AND pos=?',
+                                (subscription_id, position)).fetchone()
+        if (data is not None) + (gap is not None) + (candidate is not None) > 1:
+            raise ValueError('data, gap and candidate facts conflict')
         if not data and not gap:
             break
         frontier = position

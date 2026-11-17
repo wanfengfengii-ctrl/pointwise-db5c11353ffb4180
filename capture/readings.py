@@ -1,6 +1,5 @@
 from dataclasses import asdict, dataclass
 from capture.projection import load_snapshot
-from capture.items import ItemRegistry
 
 
 @dataclass(frozen=True)
@@ -20,9 +19,13 @@ class ReadRecord:
         return result
 
 
+def _known_devices(snapshot):
+    return {item.device for _, items in snapshot.versions for item in items}
+
+
 def select_readings(snapshot, device=None):
-    if device is not None:
-        ItemRegistry(snapshot.spec.items).require_device(device)
+    if device is not None and device not in _known_devices(snapshot):
+        raise ValueError('unknown device')
     records = []
     for notification in snapshot.notifications:
         if notification.offset > snapshot.frontier:
